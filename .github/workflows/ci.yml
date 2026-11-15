@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: diario
+          POSTGRES_PASSWORD: diario_ci
+          POSTGRES_DB: diario_teste
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U diario -d diario_teste"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://diario:diario_ci@localhost:5432/diario_teste
+      APP_DATABASE_URL: postgres://diario_app:diario_app_ci@localhost:5432/diario_teste
+      APP_DB_PASSWORD: diario_app_ci
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Instalar dependências
+        run: |
+          npm --prefix backend ci
+          npm --prefix frontend ci
+
+      - name: Compilar back-end
+        run: npm --prefix backend run build
+
+      - name: Compilar front-end
+        run: npm --prefix frontend run build
+
+      - name: Testes
+        run: npm --prefix backend test
