@@ -1,0 +1,11 @@
+{
+  "name": "diario-mgm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DiárioMGM: sistema escolar da Escola Municipal Murillo Garcia Moreira (monorepo backend + frontend)",
+  "scripts": {
+    "instalar": "npm --prefix backend ci && npm --prefix frontend ci",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "test": "npm --prefix backend test"
+  }
+}

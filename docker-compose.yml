@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-diario}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-diario_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-diario_mgm}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+    volumes:
+      - dados-pg:/var/lib/postgresql
+      - ./docker/01-banco-de-teste.sql:/docker-entrypoint-initdb.d/01-banco-de-teste.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-diario}:${POSTGRES_PASSWORD:-diario_dev}@db:5432/${POSTGRES_DB:-diario_mgm}
+      APP_DATABASE_URL: postgres://diario_app:${APP_DB_PASSWORD:-diario_app_dev}@db:5432/${POSTGRES_DB:-diario_mgm}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-diario_app_dev}
+      PORT: "3000"
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
+
+volumes:
+  dados-pg:
